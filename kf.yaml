@@ -1,0 +1,9 @@
+profiles:
+#  - name: my-profile
+#    services:
+#      - name: srv1
+#        lport: 8081
+#        rport: 80
+#        namespace: dev
+#      - name: srv2
+#        lport: 8081
