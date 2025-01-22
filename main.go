@@ -31,7 +31,7 @@ type opt struct {
 	service   *[]string
 	forward   *[]string
 	list      *bool
-	namespace *string
+	namespace *config.Env
 	help      string
 }
 
@@ -70,7 +70,7 @@ func parseArgs() *opt {
 	opt.service = parser.List("s", "service", &argparse.Options{Required: false, Help: "<alias>[:lport][:rport] ... forward one or more services from the config service list. lport/rport -> overrides the default port ", Validate: validateServiceArgs})
 	opt.forward = parser.List("f", "forward", &argparse.Options{Required: false, Help: "<service_name><:lport><:rport> ... forward one or more services", Validate: validateServiceArgs})
 	opt.list = parser.Flag("l", "list", &argparse.Options{Required: false, Help: "list all profiles and services"})
-	opt.namespace = parser.String("n", "namespace", &argparse.Options{Required: false, Help: "kube namespace; defaults to dev; can be passed along with other args"})
+	opt.namespace = parser.Selector("n", "namespace", []string{config.DEV, config.UAT, config.PROD}, &argparse.Options{Required: false, Help: "kube namespace; defaults to dev; can be passed along with other args"})
 	profile := parser.StringPositional(&argparse.Options{Required: false, Help: "forward all services on the selected profile; same as -p"})
 
 	// Parse input
@@ -121,10 +121,10 @@ func main() {
 					RemotePort: s.RemotePort,
 				}
 			})
-			k.ForwardOverlays(overlays, cmp.Or(*opt.namespace, "dev"), stopCh)
+			k.ForwardOverlays(overlays, cmp.Or(*opt.namespace, config.DEV), stopCh)
 		} else {
 			services := parseServiceArgs(*opt.forward, true)
-			k.ForwardServices(services, cmp.Or(*opt.namespace, "dev"), stopCh)
+			k.ForwardServices(services, cmp.Or(*opt.namespace, config.DEV), stopCh)
 		}
 
 		//waiting for interrupt
