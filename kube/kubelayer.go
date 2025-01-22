@@ -11,6 +11,7 @@ import (
 	"k8s.io/client-go/tools/portforward"
 	"k8s.io/client-go/transport/spdy"
 	"k8s.io/client-go/util/homedir"
+	"kf/config"
 	"net/http"
 	"net/url"
 	"os"
@@ -53,7 +54,7 @@ func newKubeLayer() (*kubeLayer, error) {
 	}, nil
 }
 
-func (kl *kubeLayer) getService(namespace string, serviceName string) (*v2.Service, error) {
+func (kl *kubeLayer) getService(namespace config.Env, serviceName string) (*v2.Service, error) {
 	service, err := kl.
 		clientset.
 		CoreV1().

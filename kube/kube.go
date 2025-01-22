@@ -19,7 +19,7 @@ func NewKube() (*Kube, error) {
 	return &Kube{kubeLayer: kl}, nil
 }
 
-func (k *Kube) ForwardProfile(profile *config.Profile, namespace string, stopCh chan struct{}) {
+func (k *Kube) ForwardProfile(profile *config.Profile, namespace config.Env, stopCh chan struct{}) {
 	for _, overlay := range profile.Services {
 		go func() {
 			err := k.forwardOverlay(overlay, cmp.Or(namespace, profile.Namespace), stopCh)
@@ -30,7 +30,7 @@ func (k *Kube) ForwardProfile(profile *config.Profile, namespace string, stopCh 
 	}
 }
 
-func (k *Kube) ForwardOverlays(overlays []*config.ServiceOverlay, namespace string, stopCh chan struct{}) {
+func (k *Kube) ForwardOverlays(overlays []*config.ServiceOverlay, namespace config.Env, stopCh chan struct{}) {
 	for _, overlay := range overlays {
 		go func() {
 			err := k.forwardOverlay(overlay, namespace, stopCh)
@@ -41,7 +41,7 @@ func (k *Kube) ForwardOverlays(overlays []*config.ServiceOverlay, namespace stri
 	}
 }
 
-func (k *Kube) ForwardServices(services []*config.Service, namespace string, stopCh chan struct{}) {
+func (k *Kube) ForwardServices(services []*config.Service, namespace config.Env, stopCh chan struct{}) {
 	for _, service := range services {
 		go func() {
 			err := k.forwardService(service, namespace, stopCh)
@@ -52,7 +52,7 @@ func (k *Kube) ForwardServices(services []*config.Service, namespace string, sto
 	}
 }
 
-func (k *Kube) forwardOverlay(overlay *config.ServiceOverlay, namespace string, stopCh chan struct{}) error {
+func (k *Kube) forwardOverlay(overlay *config.ServiceOverlay, namespace config.Env, stopCh chan struct{}) error {
 	return k.forwardService(
 		&config.Service{
 			Name:       overlay.Service.Name,
@@ -62,7 +62,7 @@ func (k *Kube) forwardOverlay(overlay *config.ServiceOverlay, namespace string, 
 		}, namespace, stopCh)
 }
 
-func (k *Kube) forwardService(cfgService *config.Service, namespace string, stopCh chan struct{}) error {
+func (k *Kube) forwardService(cfgService *config.Service, namespace config.Env, stopCh chan struct{}) error {
 	log.Printf("Forwarding %s (%s) - lport %d ; rport %d\n", cfgService.Alias, namespace, cfgService.LocalPort, cfgService.RemotePort)
 	srv, err := k.kubeLayer.getService(namespace, cfgService.Name)
 
