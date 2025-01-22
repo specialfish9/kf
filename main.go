@@ -4,6 +4,7 @@ import (
 	"cmp"
 	"fmt"
 	"github.com/akamensky/argparse"
+	"github.com/logrusorgru/aurora/v4"
 	"kf/config"
 	"kf/kube"
 	"kf/utils"
@@ -16,13 +17,13 @@ import (
 )
 
 func printFiglet() {
-	fmt.Println(" __      _____ ")
-	fmt.Println("|  | ___/ ____\\ ")
-	fmt.Println("|  |/ /\\   __\\ ")
-	fmt.Println("|    <  |  |   ")
-	fmt.Println("|__|_ \\ |__|   ")
-	fmt.Println("     \\/       2")
-	fmt.Println("")
+	fmt.Println(aurora.Bold(aurora.Green(" __      _____ ")))
+	fmt.Println(aurora.Bold(aurora.Green("|  | ___/ ____\\ ")))
+	fmt.Println(aurora.Bold(aurora.Green("|  |/ /\\   __\\ ")))
+	fmt.Println(aurora.Bold(aurora.Green("|    <  |  |   ")))
+	fmt.Println(aurora.Bold(aurora.Green("|__|_ \\ |__|   ")))
+	fmt.Println(aurora.Bold(aurora.Green("     \\/       2")))
+	fmt.Println(aurora.Bold(aurora.Green("")))
 }
 
 type opt struct {
