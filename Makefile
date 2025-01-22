@@ -1,4 +1,4 @@
-INSTALL_DIR = $(HOME)/bin/kf
+INSTALL_DIR = /usr/local/bin/kf
 DEFAULT_CONFIG = kf.yaml
 CONFIG_HOME = $(HOME)/.config
 
