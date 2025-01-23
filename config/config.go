@@ -10,13 +10,7 @@ import (
 	"path/filepath"
 )
 
-type Env = string
-
-const (
-	DEV  Env = "dev"
-	UAT  Env = "uat"
-	PROD Env = "prod"
-)
+const DefaultEnv = "dev"
 
 type Config struct {
 	Profiles   []*Profile `yaml:"profiles" validate:"required"`
@@ -26,7 +20,7 @@ type Config struct {
 
 type Profile struct {
 	Name      string            `yaml:"name" validate:"required"`
-	Namespace Env               `yaml:"namespace"` //default: dev
+	Namespace string            `yaml:"namespace"` //default: dev
 	Services  []*ServiceOverlay `yaml:"services" validate:"required,min=1"`
 }
 
@@ -110,7 +104,7 @@ func validate(c *Config) error {
 	//filling service in profiles
 	for _, profile := range c.Profiles {
 		if profile.Namespace == "" {
-			profile.Namespace = DEV
+			profile.Namespace = DefaultEnv
 		}
 		for _, overlay := range profile.Services {
 			if service, ok := c.ServiceMap[overlay.Ref]; ok {
