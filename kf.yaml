@@ -3,6 +3,7 @@
 #    namespace: dev
 #    services:
 #      - ref: pippo
+#        lport: 9000
 #      - ref: another_service
 #
 #services:
