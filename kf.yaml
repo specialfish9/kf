@@ -1,9 +1,17 @@
-profiles:
+#profiles:
 #  - name: my-profile
+#    namespace: dev
 #    services:
-#      - name: srv1
-#        lport: 8081
-#        rport: 80
-#        namespace: dev
-#      - name: srv2
-#        lport: 8081
+#      - ref: pippo
+#        lport: 9000
+#      - ref: another_service
+#
+#services:
+#  - name: my-service
+#    alias: pippo
+#    lport: 8085
+#    rport: 3000
+#  - name: another_service
+#    lport: 5000
+#  - name: service-defined-but-not-referenced
+#    lport: 5001

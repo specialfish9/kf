@@ -2,26 +2,60 @@ package config
 
 import (
 	"fmt"
+	"github.com/go-playground/validator/v10"
 	"gopkg.in/yaml.v3"
 	"k8s.io/client-go/util/homedir"
+	"kf/utils"
 	"os"
 	"path/filepath"
 )
 
-type Config struct {
-	Profiles []*Profile `yaml:"profiles"`
-}
+const DefaultEnv = "dev"
 
-type Service struct {
-	Name       string `yaml:"name"`
-	LocalPort  int    `yaml:"lport"`
-	RemotePort int    `yaml:"rport"`
-	Namespace  string `yaml:"namespace"`
+type Config struct {
+	Profiles   []*Profile `yaml:"profiles" validate:"required"`
+	Services   []*Service `yaml:"services" validate:"required"`
+	ServiceMap map[string]*Service
 }
 
 type Profile struct {
-	Name     string     `yaml:"name"`
-	Services []*Service `yaml:"services"`
+	Name      string            `yaml:"name" validate:"required"`
+	Namespace string            `yaml:"namespace"` //default: dev
+	Services  []*ServiceOverlay `yaml:"services" validate:"required,min=1"`
+}
+
+type ServiceOverlay struct {
+	Ref        string `yaml:"ref" validate:"required"` //alias reference in services
+	LocalPort  int    `yaml:"lport"`                   //overrides the local port
+	RemotePort int    `yaml:"rport"`                   //overrides the remote port
+	Service    *Service
+}
+
+type Service struct {
+	Name       string `yaml:"name" validate:"required"`
+	Alias      string `yaml:"alias"` //alias reference in profiles; default = name
+	LocalPort  int    `yaml:"lport" validate:"required"`
+	RemotePort int    `yaml:"rport"` //default: local port
+}
+
+func (cfg *Config) PrintList() {
+	fmt.Println("Profiles:")
+	for _, profile := range cfg.Profiles {
+		fmt.Printf("  - %s\n", profile.Name)
+	}
+	fmt.Println("Services:")
+	for _, service := range cfg.Services {
+		fmt.Printf("  - %s\n", service.Alias)
+	}
+}
+
+func (cfg *Config) GetProfile(profile string) *Profile {
+	for _, p := range cfg.Profiles {
+		if p.Name == profile {
+			return p
+		}
+	}
+	return nil
 }
 
 func DefaultPath() string {
@@ -49,22 +83,34 @@ func Read(path string) (*Config, error) {
 }
 
 func validate(c *Config) error {
-	for _, profile := range c.Profiles {
-		if profile.Name == "" {
-			return fmt.Errorf("config: missing name on a profile")
+
+	v := validator.New(validator.WithRequiredStructEnabled())
+	if err := v.Struct(c); err != nil {
+		return err
+	}
+
+	for _, service := range c.Services {
+		if service.Alias == "" {
+			service.Alias = service.Name
 		}
-		for _, service := range profile.Services {
-			if service.Name == "" {
-				return fmt.Errorf("config: missing name on a service for profile %s", profile.Name)
-			}
-			if service.Namespace == "" {
-				service.Namespace = "dev"
-			}
-			if service.LocalPort == 0 {
-				return fmt.Errorf("config: missing local on service %s for profile %s", service.Name, profile.Name)
-			}
-			if service.RemotePort == 0 {
-				service.RemotePort = 80
+		if service.RemotePort == 0 {
+			service.RemotePort = service.LocalPort
+		}
+	}
+
+	//filling service map
+	c.ServiceMap = utils.MapFromSlice(c.Services, func(s *Service) string { return s.Alias })
+
+	//filling service in profiles
+	for _, profile := range c.Profiles {
+		if profile.Namespace == "" {
+			profile.Namespace = DefaultEnv
+		}
+		for _, overlay := range profile.Services {
+			if service, ok := c.ServiceMap[overlay.Ref]; ok {
+				overlay.Service = service
+			} else {
+				return fmt.Errorf("config: service %s not found", overlay.Ref)
 			}
 		}
 	}

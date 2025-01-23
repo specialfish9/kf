@@ -1,116 +1,69 @@
 package main
 
 import (
+	"cmp"
 	"fmt"
 	"kf/config"
+	"kf/kube"
+	"kf/utils"
 	"log"
 	"os"
 	"os/signal"
 	"syscall"
 )
 
-func forward(kl *kubeLayer, cfgService *config.Service, stopCh chan struct{}) error {
-	log.Printf("Forwarding %s (%s) - lport %d ; rport %d\n", cfgService.Name, cfgService.Namespace, cfgService.LocalPort, cfgService.RemotePort)
-	srv, err := kl.getService(cfgService.Namespace, cfgService.Name)
-
-	if err != nil {
-		return err
-	}
-
-	readyCh := make(chan struct{})
-
-	err = kl.forward(
-		PortForwardRequest{
-			Service:    srv,
-			LocalPort:  cfgService.LocalPort,
-			RemotePort: cfgService.RemotePort,
-			ReadyCh:    readyCh,
-			StopCh:     stopCh,
-		})
-
-	if err != nil {
-		panic(err.Error())
-	}
-
-	<-stopCh
-
-	log.Printf("stopped %s:%d\n", cfgService.Name, cfgService.LocalPort)
-	return nil
-}
-
-func printFiglet() {
-	fmt.Println(" __      _____ ")
-	fmt.Println("|  | ___/ ____\\ ")
-	fmt.Println("|  |/ /\\   __\\ ")
-	fmt.Println("|    <  |  |   ")
-	fmt.Println("|__|_ \\ |__|   ")
-	fmt.Println("     \\/       2")
-	fmt.Println("")
-}
-
-func usage() {
-	fmt.Println(os.Args[0] + " <profile name> [profile name....]")
-}
-
 func main() {
 	printFiglet()
-
-	configPath := config.DefaultPath()
-	cfg, err := config.Read(configPath)
-
+	opt := parseArgs()
+	cfg, err := config.Read(config.DefaultPath())
 	if err != nil {
 		log.Fatalf("kf: unable to load config: %v", err.Error())
 	}
 
-	kubeLayer, err := newKubeLayer()
-
-	if err != nil {
-		log.Fatalf("kf: error while connecting to kubernetes: %v", err.Error())
-	}
-
-	stopCh := make(chan struct{}, 1)
-
-	if len(os.Args) == 1 {
-		usage()
-		return
-	}
-
-	for i, arg := range os.Args {
-		// skip name
-		if i == 0 {
-			continue
+	if *opt.profile != "" || len(*opt.service) > 0 || len(*opt.forward) > 0 {
+		k, err := kube.NewKube()
+		if err != nil {
+			log.Fatalf("kf: error while connecting to kubernetes: %v", err.Error())
 		}
+		stopCh := make(chan struct{}, 1)
 
-		var profile *config.Profile
-		for _, p := range cfg.Profiles {
-			if p.Name == arg {
-				profile = p
-				break
+		if *opt.profile != "" {
+			profile := cfg.GetProfile(*opt.profile)
+			if profile == nil {
+				log.Fatalf("kf: error spinning up services: unknown profile '%s'", *opt.profile)
 			}
-		}
-
-		if profile == nil {
-			log.Fatalf("kf: error spinning up services: unknown profile '%s'", arg)
-		}
-
-		for _, service := range profile.Services {
-			go func() {
-				err := forward(kubeLayer, service, stopCh)
-				if err != nil {
-					log.Fatalf("kf: error forwarding service '%s': %v", service.Name, err.Error())
+			k.ForwardProfile(profile, *opt.namespace, stopCh)
+		} else if len(*opt.service) > 0 {
+			services := parseServiceArgs(*opt.service, false)
+			overlays := utils.Map(services, func(s *config.Service) *config.ServiceOverlay {
+				ref := cfg.ServiceMap[s.Alias]
+				if ref == nil {
+					log.Fatalf("kf: error spinning up services: unknown service alias '%s'", s.Alias)
 				}
-			}()
+				return &config.ServiceOverlay{
+					Ref:        s.Alias,
+					Service:    ref,
+					LocalPort:  s.LocalPort,
+					RemotePort: s.RemotePort,
+				}
+			})
+			k.ForwardOverlays(overlays, cmp.Or(*opt.namespace, config.DefaultEnv), stopCh)
+		} else {
+			services := parseServiceArgs(*opt.forward, true)
+			k.ForwardServices(services, cmp.Or(*opt.namespace, config.DefaultEnv), stopCh)
 		}
 
+		//waiting for interrupt
+		interrupt := make(chan os.Signal, 1)
+		signal.Notify(interrupt, os.Interrupt, syscall.SIGTERM)
+		if s := <-interrupt; true {
+			log.Println("Signal: " + s.String())
+			close(stopCh)
+		}
+		log.Println("Bye")
+	} else if *opt.list {
+		cfg.PrintList()
+	} else {
+		fmt.Print(opt.help)
 	}
-
-	interrupt := make(chan os.Signal, 1)
-	signal.Notify(interrupt, os.Interrupt, syscall.SIGTERM)
-
-	if s := <-interrupt; true {
-		log.Println("Signal: " + s.String())
-		close(stopCh)
-	}
-
-	log.Println("Bye")
 }
