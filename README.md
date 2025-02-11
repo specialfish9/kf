@@ -3,8 +3,14 @@ A lazy tool for forwarding  services in k8
 
 Installation:
 ```bash
-make install
+sudo make install
 ```
+
+and optionally copy the default config:
+```bash
+sudo make config
+```
+
 
 Usage:
 ```bash
