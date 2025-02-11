@@ -125,9 +125,11 @@ func (kl *kubeLayer) forward(req PortForwardRequest) error {
 }
 
 func constructUrl(scheme, host, path string) (*url.URL, error) {
-	basePath := host[strings.Index(host, "/"):]
-	host = host[:len(host)-len(basePath)]
-	path = basePath + path
+	if strings.Contains(host, "/") {
+		basePath := host[strings.Index(host, "/"):]
+		host = host[:len(host)-len(basePath)]
+		path = basePath + path
+	}
 
 	pathEsc, err := url.QueryUnescape(path)
 
