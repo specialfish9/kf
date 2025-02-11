@@ -109,7 +109,12 @@ func (kl *kubeLayer) forward(req PortForwardRequest) error {
 		return err
 	}
 
-	dialer := spdy.NewDialer(upgrader, &http.Client{Transport: transport}, http.MethodPost, &url.URL{Scheme: "https", Path: path, Host: hostIP})
+	url, err := constructUrl("https", hostIP, path)
+	if err != nil {
+		return fmt.Errorf("kf: error parsing url: %w", err)
+	}
+
+	dialer := spdy.NewDialer(upgrader, &http.Client{Transport: transport}, http.MethodPost, url)
 
 	fw, err := portforward.New(dialer, []string{fmt.Sprintf("%d:%d", req.LocalPort, req.RemotePort)}, req.StopCh, req.ReadyCh, os.Stdout, os.Stderr)
 	if err != nil {
@@ -117,4 +122,18 @@ func (kl *kubeLayer) forward(req PortForwardRequest) error {
 	}
 
 	return fw.ForwardPorts()
+}
+
+func constructUrl(scheme, host, path string) (*url.URL, error) {
+	basePath := host[strings.Index(host, "/"):]
+	host = host[:len(host)-len(basePath)]
+	path = basePath + path
+
+	pathEsc, err := url.QueryUnescape(path)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &url.URL{Scheme: scheme, Path: pathEsc, Host: host}, nil
 }
