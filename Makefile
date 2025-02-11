@@ -9,7 +9,7 @@ help: ## Display this help screen
 run:
 	go run .
 
-install: config update
+install: update
 .PHONY: install
 
 update: ## Update the bin
