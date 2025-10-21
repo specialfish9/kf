@@ -30,8 +30,16 @@ type PortForwardRequest struct {
 }
 
 func newKubeLayer() (*kubeLayer, error) {
-	home := homedir.HomeDir()
-	kubeconfig := filepath.Join(home, ".kube", "config")
+	var kubeconfig string
+	
+	// Check for KUBECONFIG environment variable first
+	if kubeconfigEnv := os.Getenv("KUBECONFIG"); kubeconfigEnv != "" {
+		kubeconfig = kubeconfigEnv
+	} else {
+		// Fall back to default location
+		home := homedir.HomeDir()
+		kubeconfig = filepath.Join(home, ".kube", "config")
+	}
 
 	config, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
 
