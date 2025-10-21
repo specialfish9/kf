@@ -5,7 +5,7 @@ import (
 	"github.com/akamensky/argparse"
 	"github.com/logrusorgru/aurora/v4"
 	"kf/config"
-	"kf/utils"
+	"kf/internal/utils"
 	"log"
 	"os"
 	"regexp"
