@@ -7,12 +7,14 @@ import (
 	"kf/kube"
 	"kf/utils"
 	"log"
+	"log/slog"
 	"os"
 	"os/signal"
 	"syscall"
 )
 
 func main() {
+	slog.SetLogLoggerLevel(slog.LevelDebug)
 	printFiglet()
 	opt := parseArgs()
 	cfg, err := config.Read(config.DefaultPath())

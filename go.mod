@@ -3,7 +3,9 @@ module kf
 go 1.22.3
 
 require (
+	github.com/akamensky/argparse v1.4.0
 	github.com/go-playground/validator/v10 v10.24.0
+	github.com/logrusorgru/aurora/v4 v4.0.0
 	gopkg.in/yaml.v3 v3.0.1
 	k8s.io/api v0.31.3
 	k8s.io/apimachinery v0.31.3
@@ -11,7 +13,6 @@ require (
 )
 
 require (
-	github.com/akamensky/argparse v1.4.0 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/emicklei/go-restful/v3 v3.11.0 // indirect
 	github.com/fxamacker/cbor/v2 v2.7.0 // indirect
@@ -33,7 +34,6 @@ require (
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/leodido/go-urn v1.4.0 // indirect
-	github.com/logrusorgru/aurora/v4 v4.0.0 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/moby/spdystream v0.4.0 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
