@@ -5,20 +5,19 @@ import (
 	"github.com/akamensky/argparse"
 	"github.com/logrusorgru/aurora/v4"
 	"kf/config"
-	"kf/internal/utils"
 	"log"
 	"os"
 	"regexp"
 	"strconv"
 )
 
-func printFiglet() {
+func printFiglet(version string) {
 	fmt.Println(aurora.Bold(aurora.Green(" __      _____ ")))
 	fmt.Println(aurora.Bold(aurora.Green("|  | ___/ ____\\ ")))
 	fmt.Println(aurora.Bold(aurora.Green("|  |/ /\\   __\\ ")))
 	fmt.Println(aurora.Bold(aurora.Green("|    <  |  |   ")))
 	fmt.Println(aurora.Bold(aurora.Green("|__|_ \\ |__|   ")))
-	fmt.Println(aurora.Bold(aurora.Green("     \\/       2")))
+	fmt.Println(aurora.Bold(aurora.Green(fmt.Sprintf("     \\/       %s", version))))
 	fmt.Println(aurora.Bold(aurora.Green("")))
 }
 
@@ -28,6 +27,7 @@ type opt struct {
 	forward   *[]string
 	list      *bool
 	namespace *string
+	verbose   *bool
 	help      string
 }
 
@@ -43,7 +43,7 @@ func validateServiceArgs(args []string) error {
 }
 
 func parseServiceArgs(args []string, mustHavePorts bool) []*config.Service {
-	return utils.Map(args, func(s string) *config.Service {
+	return Map(args, func(s string) *config.Service {
 		matches := serviceRx.FindStringSubmatch(s)
 		if mustHavePorts && (matches[2] == "" || matches[3] == "") {
 			log.Fatalf("invalid service format '%s'", s)
@@ -67,6 +67,7 @@ func parseArgs() *opt {
 	opt.forward = parser.List("f", "forward", &argparse.Options{Required: false, Help: "<service_name><:lport><:rport> ... forward one or more services", Validate: validateServiceArgs})
 	opt.list = parser.Flag("l", "list", &argparse.Options{Required: false, Help: "list all profiles and services"})
 	opt.namespace = parser.String("n", "namespace", &argparse.Options{Required: false, Help: "kube namespace; defaults to dev; can be passed along with other args"})
+	opt.verbose = parser.Flag("v", "verbose", &argparse.Options{Required: false, Help: "enable verbose logging"})
 	profile := parser.StringPositional(&argparse.Options{Required: false, Help: "forward all services on the selected profile; same as -p"})
 
 	// Parse input

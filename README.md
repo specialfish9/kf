@@ -1,5 +1,5 @@
 # KF
-A lazy tool for forwarding  services in k8
+A lazy tool for forwarding Kubernetes pods.
 
 Installation:
 ```bash
@@ -10,7 +10,6 @@ and optionally copy the default config:
 ```bash
 sudo make config
 ```
-
 
 Usage:
 ```bash
