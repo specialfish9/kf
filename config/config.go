@@ -5,7 +5,7 @@ import (
 	"github.com/go-playground/validator/v10"
 	"gopkg.in/yaml.v3"
 	"k8s.io/client-go/util/homedir"
-	"kf/utils"
+	"kf/internal/utils"
 	"os"
 	"path/filepath"
 )
