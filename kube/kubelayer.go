@@ -9,9 +9,7 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/tools/portforward"
-	"k8s.io/client-go/transport/spdy"
 	"k8s.io/client-go/util/homedir"
-	"net/http"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -104,18 +102,15 @@ func (kl *kubeLayer) forward(req PortForwardRequest) error {
 	path := fmt.Sprintf("/api/v1/namespaces/%s/pods/%s/portforward/", pod.Namespace, pod.Name)
 	hostIP := strings.TrimLeft(kl.config.Host, "htps:/")
 
-	transport, upgrader, err := spdy.RoundTripperFor(kl.config)
-	if err != nil {
-		return err
-	}
-
 	url, err := constructUrl("https", hostIP, path)
 	if err != nil {
 		return fmt.Errorf("kf: error parsing url: %w", err)
 	}
 
-	dialer := spdy.NewDialer(upgrader, &http.Client{Transport: transport}, http.MethodPost, url)
-
+	dialer, err := portforward.NewSPDYOverWebsocketDialer(url, kl.config)
+	if err != nil {
+		return err
+	}
 	fw, err := portforward.New(dialer, []string{fmt.Sprintf("%d:%d", req.LocalPort, req.RemotePort)}, req.StopCh, req.ReadyCh, os.Stdout, os.Stderr)
 	if err != nil {
 		return err
