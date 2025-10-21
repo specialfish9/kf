@@ -5,7 +5,6 @@ import (
 	"github.com/go-playground/validator/v10"
 	"gopkg.in/yaml.v3"
 	"k8s.io/client-go/util/homedir"
-	"kf/internal/utils"
 	"os"
 	"path/filepath"
 )
@@ -99,7 +98,7 @@ func validate(c *Config) error {
 	}
 
 	//filling service map
-	c.ServiceMap = utils.MapFromSlice(c.Services, func(s *Service) string { return s.Alias })
+	c.ServiceMap = MapFromSlice(c.Services, func(s *Service) string { return s.Alias })
 
 	//filling service in profiles
 	for _, profile := range c.Profiles {
@@ -116,4 +115,12 @@ func validate(c *Config) error {
 	}
 
 	return nil
+}
+
+func MapFromSlice[T comparable, E any](source []E, keyExtractor func(E) T) map[T]E {
+	m := make(map[T]E, len(source))
+	for _, val := range source {
+		m[keyExtractor(val)] = val
+	}
+	return m
 }
