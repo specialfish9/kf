@@ -25,7 +25,7 @@ clean: ## Clean project
 .PHONY: clean
 
 install-bin: ## Install the binary
-	@go build -o $(INSTALL_DIR) .
+	@go build -o $(INSTALL_DIR) $(ENTRY_POINT)
 .PHONY: install-bin
 
 config: ## Copy the default configuration file
