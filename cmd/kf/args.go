@@ -29,6 +29,7 @@ type opt struct {
 	namespace *string
 	verbose   *bool
 	help      string
+	config    *string
 }
 
 var serviceRx = regexp.MustCompile(`^([\w\-]+)(?::(\d{1,5}))?(?::(\d{1,5}))?$`)
@@ -62,6 +63,7 @@ func parseServiceArgs(args []string, mustHavePorts bool) []*config.Service {
 func parseArgs() *opt {
 	opt := &opt{}
 	parser := argparse.NewParser("kf", "")
+	opt.config = parser.String("c", "config", &argparse.Options{Required: false, Help: fmt.Sprintf("path to config file; defaults to %s", config.DefaultPath())})
 	opt.profile = parser.String("p", "profile", &argparse.Options{Required: false, Help: "<profile_name> forward all services on the selected profile"})
 	opt.service = parser.List("s", "service", &argparse.Options{Required: false, Help: "<alias>[:lport][:rport] ... forward one or more services from the config service list. lport/rport -> overrides the default port ", Validate: validateServiceArgs})
 	opt.forward = parser.List("f", "forward", &argparse.Options{Required: false, Help: "<service_name><:lport><:rport> ... forward one or more services", Validate: validateServiceArgs})

@@ -15,7 +15,7 @@ import (
 	"syscall"
 )
 
-const version = "2.1"
+const version = "2.2.0"
 
 func getK8sConfigPath() string {
 	kubeconfig := os.Getenv("KUBECONFIG")
@@ -42,7 +42,10 @@ func main() {
 
 	setupLogging(*opt.verbose)
 
-	cfg, err := config.Read(config.DefaultPath())
+	configPath := cmp.Or(*opt.config, config.DefaultPath())
+	slog.Debug("Using config file: " + configPath)
+
+	cfg, err := config.Read(configPath)
 	if err != nil {
 		log.Fatalf("kf: unable to load config: %v", err.Error())
 	}
