@@ -9,15 +9,15 @@ import (
 )
 
 type KF struct {
-	srv *k8s.Service
+	layer *k8s.Layer
 }
 
 func New(k8sConfigPath string) (*KF, error) {
-	srv, err := k8s.NewService(k8sConfigPath)
+	l, err := k8s.New(k8sConfigPath)
 	if err != nil {
 		return nil, err
 	}
-	return &KF{srv: srv}, nil
+	return &KF{layer: l}, nil
 }
 
 func (k *KF) ForwardProfile(ctx context.Context, profile *config.Profile, namespace string, stopCh chan struct{}) {
@@ -82,14 +82,14 @@ func (k *KF) forwardService(ctx context.Context, cfgService *config.Service, nam
 		"rport", cfgService.RemotePort,
 	)
 
-	srv, err := k.srv.GetService(ctx, namespace, cfgService.Name)
+	srv, err := k.layer.GetService(ctx, namespace, cfgService.Name)
 	if err != nil {
 		return err
 	}
 
 	readyCh := make(chan struct{})
 
-	err = k.srv.Forward(
+	err = k.layer.Forward(
 		ctx,
 		k8s.PortForwardRequest{
 			Service:    srv,

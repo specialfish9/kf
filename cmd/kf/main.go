@@ -4,7 +4,6 @@ import (
 	"cmp"
 	"context"
 	"fmt"
-	"k8s.io/client-go/util/homedir"
 	"kf/config"
 	"kf/internal/kf"
 	"log"
@@ -13,6 +12,8 @@ import (
 	"os/signal"
 	"path/filepath"
 	"syscall"
+
+	"k8s.io/client-go/util/homedir"
 )
 
 const version = "2.2.0"
@@ -42,17 +43,17 @@ func main() {
 
 	setupLogging(*opt.verbose)
 
+	if *opt.profile == "" && len(*opt.service) == 0 && len(*opt.forward) == 0 && !*opt.list {
+		fmt.Print(opt.help)
+		return
+	}
+
 	configPath := cmp.Or(*opt.config, config.DefaultPath())
 	slog.Debug("Using config file: " + configPath)
 
 	cfg, err := config.Read(configPath)
 	if err != nil {
 		log.Fatalf("kf: unable to load config: %v", err.Error())
-	}
-
-	if *opt.profile == "" && len(*opt.service) == 0 && len(*opt.forward) == 0 && !*opt.list {
-		fmt.Print(opt.help)
-		return
 	}
 
 	if *opt.list {
