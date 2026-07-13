@@ -37,12 +37,12 @@ install-all: installf installl ## Install the binaries
 .PHONY: install-all
 
 installf:
-	echo "Installing KF..."
+	@echo "Installing KF..."
 	@go build -o $(INSTALL_DIR)$(KF_BIN) $(KF_ENTRY_POINT)
 .PHONY: installf
 
 installl:
-	echo "Installing KL..."
+	@echo "Installing KL..."
 	@go build -o $(INSTALL_DIR)$(KL_BIN) $(KL_ENTRY_POINT)
 .PHONY: installl
 

@@ -3,6 +3,7 @@ module kf
 go 1.26.0
 
 require (
+	charm.land/lipgloss/v2 v2.0.3
 	github.com/akamensky/argparse v1.4.0
 	github.com/charmbracelet/bubbles v1.0.0
 	github.com/charmbracelet/bubbletea v1.3.10
@@ -17,7 +18,6 @@ require (
 )
 
 require (
-	charm.land/lipgloss/v2 v2.0.3 // indirect
 	github.com/aymanbagabas/go-osc52/v2 v2.0.1 // indirect
 	github.com/charmbracelet/colorprofile v0.4.3 // indirect
 	github.com/charmbracelet/ultraviolet v0.0.0-20251205161215-1948445e3318 // indirect

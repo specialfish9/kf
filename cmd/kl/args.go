@@ -14,6 +14,7 @@ type opt struct {
 	namespace *string
 	verbose   *bool
 	filter    *string
+	all       *bool
 	config    *string
 	help      string
 }
@@ -45,6 +46,11 @@ func parseArgs() *opt {
 	opt.verbose = parser.Flag("v", "verbose", &argparse.Options{
 		Required: false,
 		Help:     "enable verbose logging",
+	})
+
+	opt.all = parser.Flag("a", "all", &argparse.Options{
+		Required: false,
+		Help:     "load all the logs since the creation of the pods",
 	})
 
 	// Parse input

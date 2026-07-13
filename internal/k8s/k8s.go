@@ -119,9 +119,13 @@ func (s *Layer) getAPodFromService(ctx context.Context, srv *v2.Service) (*v2.Po
 }
 
 func (s *Layer) ReadPodLogs(ctx context.Context, namespace string, podName string) (io.ReadCloser, error) {
+	return s.ReadPodLogsSince(ctx, namespace, podName, time.Now())
+}
+
+func (s *Layer) ReadPodLogsSince(ctx context.Context, namespace string, podName string, since time.Time) (io.ReadCloser, error) {
 	req := s.clientset.CoreV1().Pods(namespace).GetLogs(podName, &v2.PodLogOptions{
 		Follow:    true,
-		SinceTime: &v1.Time{Time: time.Now()},
+		SinceTime: &v1.Time{Time: since},
 	})
 	logStream, err := req.Stream(ctx)
 	if err != nil {

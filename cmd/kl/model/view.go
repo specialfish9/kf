@@ -40,6 +40,12 @@ var (
 			PaddingLeft(1).
 			PaddingRight(1)
 
+	formatStyle = lipgloss.
+			NewStyle().
+			Bold(true).
+			PaddingLeft(1).
+			PaddingRight(1)
+
 	filterStyle = lipgloss.
 			NewStyle().
 			Bold(true).
@@ -68,6 +74,9 @@ func (m Model) headerView() string {
 		filter := filterStyle.Render(fmt.Sprintf("Filter: %s", f))
 		info = lipgloss.JoinHorizontal(lipgloss.Left, info, filter)
 	}
+
+	format := applyGradient(fmt.Sprintf("[f] Format: %v", m.format), formatStyle, infoGradient)
+	info = lipgloss.JoinHorizontal(lipgloss.Left, info, format)
 
 	autoscroll := applyGradient(fmt.Sprintf("[s] Autoscroll: %v", m.autoscroll), autoscrollStyle, infoGradient)
 	info = lipgloss.JoinHorizontal(lipgloss.Left, info, autoscroll)

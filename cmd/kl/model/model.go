@@ -17,6 +17,7 @@ type Model struct {
 	kl         *kl.KL
 	lines      []string
 	autoscroll bool
+	format     bool
 	ready      bool
 	logCh      <-chan string
 	errCh      <-chan error
@@ -37,6 +38,7 @@ func New(kl *kl.KL) Model {
 		logCh:      logCh,
 		errCh:      errCh,
 		autoscroll: true,
+		format:     true,
 	}
 }
 
@@ -62,7 +64,7 @@ func (m Model) Init() tea.Cmd {
 }
 
 func (m *Model) appendLine(s string) {
-	m.lines = append(m.lines, colorLine(s))
+	m.lines = append(m.lines, formatLine(s, m.format))
 	m.viewport.SetContent(strings.Join(m.lines, "\n"))
 	if m.autoscroll {
 		m.viewport.GotoBottom()
@@ -91,6 +93,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "s":
 			// toggle autoscroll
 			m.autoscroll = !m.autoscroll
+			return m, cmd
+		case "f":
+			// toggle format
+			m.format = !m.format
 			return m, cmd
 		case "up", "k":
 			m.viewport.ScrollUp(1)

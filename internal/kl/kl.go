@@ -8,6 +8,7 @@ import (
 	"kf/config"
 	"kf/internal/k8s"
 	"regexp"
+	"time"
 )
 
 type KL struct {
@@ -16,9 +17,10 @@ type KL struct {
 	serviceName string
 	namespace   string
 	filter      *regexp.Regexp
+	allMode     bool
 }
 
-func New(cfg *config.Config, k8sConfigPath string, serviceName string, namespace string, filter *string) (*KL, error) {
+func New(cfg *config.Config, k8sConfigPath string, serviceName string, namespace string, filter *string, allMode bool) (*KL, error) {
 	var regexpFilter *regexp.Regexp
 	if filter != nil {
 		var err error
@@ -45,6 +47,7 @@ func New(cfg *config.Config, k8sConfigPath string, serviceName string, namespace
 		serviceName: serviceName,
 		namespace:   namespace,
 		filter:      regexpFilter,
+		allMode:     allMode,
 	}, nil
 }
 
@@ -98,8 +101,15 @@ func (k *KL) readPodLog(
 	outChan chan<- string,
 	errChan chan<- error,
 ) {
+	var since time.Time
+	if k.allMode {
+		since = time.Time{} // Zero
+	} else {
+		since = time.Now()
+	}
+
 	for {
-		stream, err := k.layer.ReadPodLogs(ctx, k.namespace, podName)
+		stream, err := k.layer.ReadPodLogsSince(ctx, k.namespace, podName, since)
 		if err != nil {
 			errChan <- fmt.Errorf("kl: opening stream: %w", err)
 		}
@@ -107,6 +117,8 @@ func (k *KL) readPodLog(
 		defer func() {
 			_ = stream.Close()
 		}()
+
+		since = time.Now()
 
 		scanner := bufio.NewScanner(stream)
 		for scanner.Scan() {

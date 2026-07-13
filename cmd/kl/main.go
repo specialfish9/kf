@@ -32,7 +32,12 @@ func main() {
 		fmt.Fprintf(os.Stderr, "kl: unable to load config: %v", err.Error())
 	}
 
-	kl, err := kl.New(cfg, getK8sConfigPath(), *args.service, *args.namespace, args.filter)
+	var allMode bool
+	if args.all != nil {
+		allMode = *args.all
+	}
+
+	kl, err := kl.New(cfg, getK8sConfigPath(), *args.service, *args.namespace, args.filter, allMode)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "kl: unable to initialize kl: %v", err.Error())
 	}
