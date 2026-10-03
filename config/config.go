@@ -44,7 +44,7 @@ func (cfg *Config) PrintList() {
 	}
 	fmt.Println("Services:")
 	for _, service := range cfg.Services {
-		fmt.Printf("  - %s\n", service.Alias)
+		fmt.Printf("  - %s (alias: %s)\n", service.Name, service.Alias)
 	}
 }
 
@@ -54,6 +54,16 @@ func (cfg *Config) GetProfile(profile string) *Profile {
 			return p
 		}
 	}
+	return nil
+}
+
+func (cfg *Config) GetService(nameOrAlias string) *Service {
+	for _, s := range cfg.Services {
+		if s.Alias == nameOrAlias || s.Name == nameOrAlias {
+			return s
+		}
+	}
+
 	return nil
 }
 
