@@ -5,7 +5,7 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"kf/config"
+	configv3 "kf/config/v3"
 	"kf/internal/k8s"
 	"regexp"
 	"time"
@@ -13,14 +13,14 @@ import (
 
 type KL struct {
 	layer       *k8s.Layer
-	cfg         *config.Config
+	cfg         *configv3.Config
 	serviceName string
 	namespace   string
 	filter      *regexp.Regexp
 	allMode     bool
 }
 
-func New(cfg *config.Config, k8sConfigPath string, serviceName string, namespace string, filter *string, allMode bool) (*KL, error) {
+func New(cfg *configv3.Config, k8sConfigPath string, serviceName string, namespace string, filter *string, allMode bool) (*KL, error) {
 	var regexpFilter *regexp.Regexp
 	if filter != nil {
 		var err error

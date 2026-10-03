@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 )
 
-const DefaultEnv = "dev"
+const DefaultNamespace = "default"
 
 type Config struct {
 	Profiles   []*Profile `yaml:"profiles" validate:"required"`
@@ -113,7 +113,7 @@ func validate(c *Config) error {
 	//filling service in profiles
 	for _, profile := range c.Profiles {
 		if profile.Namespace == "" {
-			profile.Namespace = DefaultEnv
+			profile.Namespace = DefaultNamespace
 		}
 		for _, overlay := range profile.Services {
 			if service, ok := c.ServiceMap[overlay.Ref]; ok {

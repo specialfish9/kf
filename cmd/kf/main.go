@@ -5,18 +5,20 @@ import (
 	"context"
 	"fmt"
 	"kf/config"
+	configv3 "kf/config/v3"
 	"kf/internal/kf"
-	"log"
 	"log/slog"
 	"os"
 	"os/signal"
 	"path/filepath"
 	"syscall"
 
+	"github.com/SladkyCitron/slogcolor"
+	"github.com/fatih/color"
 	"k8s.io/client-go/util/homedir"
 )
 
-const version = "2.2.0"
+const version = "2.3.0"
 
 func getK8sConfigPath() string {
 	kubeconfig := os.Getenv("KUBECONFIG")
@@ -28,12 +30,23 @@ func getK8sConfigPath() string {
 }
 
 func setupLogging(verbose bool) {
-	log.SetFlags(log.Flags() &^ (log.Ldate | log.Ltime))
-	if verbose {
-		slog.SetLogLoggerLevel(slog.LevelDebug)
-	} else {
-		slog.SetLogLoggerLevel(slog.LevelInfo)
+	options := slogcolor.Options{
+		SrcFileMode: slogcolor.Nop,
+		LevelTags: map[slog.Level]string{
+			slog.LevelDebug: color.New(color.FgHiCyan).Sprint("DEBUG"),
+			slog.LevelInfo:  color.New(color.FgHiGreen).Sprint("INFO "),
+			slog.LevelWarn:  color.New(color.FgHiYellow).Sprint("WARN "),
+			slog.LevelError: color.New(color.FgHiRed).Sprint("ERROR"),
+		},
 	}
+
+	if verbose {
+		options.Level = slog.LevelDebug
+	} else {
+		options.Level = slog.LevelInfo
+	}
+
+	slog.SetDefault(slog.New(slogcolor.NewHandler(os.Stderr, &options)))
 }
 
 func main() {
@@ -43,7 +56,7 @@ func main() {
 
 	setupLogging(*opt.verbose)
 
-	if *opt.profile == "" && len(*opt.service) == 0 && len(*opt.forward) == 0 && !*opt.list {
+	if *opt.profile == "" && len(*opt.service) == 0 && !*opt.list {
 		fmt.Print(opt.help)
 		return
 	}
@@ -51,71 +64,49 @@ func main() {
 	configPath := cmp.Or(*opt.config, config.DefaultPath())
 	slog.Debug("Using config file: " + configPath)
 
-	cfg, err := config.Read(configPath)
+	cfg, err := configv3.Load(configPath)
 	if err != nil {
-		log.Fatalf("kf: unable to load config: %v", err.Error())
+		slog.Error("kf: unable to load config", "error", err.Error())
+		os.Exit(1)
 	}
 
-	if *opt.list {
-		cfg.PrintList()
-		return
-	}
-
-	k, err := kf.New(getK8sConfigPath())
+	k, err := kf.New(getK8sConfigPath(), cfg)
 	if err != nil {
 		slog.Error("kf: error while connecting to kubernetes: %v", err.Error())
 		os.Exit(1)
 	}
 
 	stopCh := make(chan struct{}, 1)
+	defer close(stopCh)
+
 	ctx := context.Background()
 
-	if *opt.profile != "" {
-		profile := cfg.GetProfile(*opt.profile)
-
-		if profile == nil {
-			slog.Error("kf: unknown profile '%s'", *opt.profile)
-			os.Exit(1)
+	go func() {
+		switch {
+		case *opt.list:
+			k.List()
+			os.Exit(0)
+		case *opt.profile != "":
+			err := k.ForwardProfile(ctx, *opt.profile, stopCh)
+			if err != nil {
+				slog.Error(err.Error())
+				os.Exit(1)
+			}
+		case opt.service != nil:
+			err := k.ForwardService(ctx, *opt.service, cmp.Or(*opt.namespace, ""), stopCh)
+			if err != nil {
+				slog.Error(err.Error())
+				os.Exit(1)
+			}
 		}
-
-		k.ForwardProfile(ctx, profile, *opt.namespace, stopCh)
-	} else if len(*opt.service) > 0 {
-		services := parseServiceArgs(*opt.service, false)
-
-		overlays := Map(services, func(s *config.Service) *config.ServiceOverlay {
-			ref := cfg.ServiceMap[s.Alias]
-			if ref == nil {
-				log.Fatalf("kf: unknown service alias '%s'", s.Alias)
-			}
-			return &config.ServiceOverlay{
-				Ref:        s.Alias,
-				Service:    ref,
-				LocalPort:  s.LocalPort,
-				RemotePort: s.RemotePort,
-			}
-		})
-
-		k.ForwardOverlays(ctx, overlays, cmp.Or(*opt.namespace, config.DefaultEnv), stopCh)
-	} else {
-		services := parseServiceArgs(*opt.forward, true)
-		k.ForwardServices(ctx, services, cmp.Or(*opt.namespace, config.DefaultEnv), stopCh)
-	}
+	}()
 
 	//waiting for interrupt
 	interrupt := make(chan os.Signal, 1)
 	signal.Notify(interrupt, os.Interrupt, syscall.SIGTERM)
 	if s := <-interrupt; true {
 		slog.Debug("Received signal: " + s.String())
-		close(stopCh)
 	}
 
-	fmt.Println("\n\nBye")
-}
-
-func Map[T any, U any](slice []T, functor func(T) U) []U {
-	result := make([]U, 0, len(slice))
-	for _, v := range slice {
-		result = append(result, functor(v))
-	}
-	return result
+	fmt.Println("\n\nBye :0")
 }

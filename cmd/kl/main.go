@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"kf/cmd/kl/model"
 	"kf/config"
+	"kf/config/v3"
 	"kf/internal/kl"
 	"os"
 	"path/filepath"
@@ -27,7 +28,7 @@ func main() {
 
 	configPath := cmp.Or(*args.config, config.DefaultPath())
 
-	cfg, err := config.Read(configPath)
+	cfg, err := configv3.Load(configPath)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "kl: unable to load config: %v", err.Error())
 	}

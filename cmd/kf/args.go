@@ -8,7 +8,6 @@ import (
 	"log"
 	"os"
 	"regexp"
-	"strconv"
 )
 
 func printFiglet(version string) {
@@ -23,8 +22,7 @@ func printFiglet(version string) {
 
 type opt struct {
 	profile   *string
-	service   *[]string
-	forward   *[]string
+	service   *string
 	list      *bool
 	namespace *string
 	verbose   *bool
@@ -43,30 +41,13 @@ func validateServiceArgs(args []string) error {
 	return nil
 }
 
-func parseServiceArgs(args []string, mustHavePorts bool) []*config.Service {
-	return Map(args, func(s string) *config.Service {
-		matches := serviceRx.FindStringSubmatch(s)
-		if mustHavePorts && (matches[2] == "" || matches[3] == "") {
-			log.Fatalf("invalid service format '%s'", s)
-		}
-		lp, _ := strconv.Atoi(matches[2])
-		rp, _ := strconv.Atoi(matches[3])
-		return &config.Service{
-			Name:       matches[1],
-			Alias:      matches[1],
-			LocalPort:  lp,
-			RemotePort: rp,
-		}
-	})
-}
-
 func parseArgs() *opt {
 	opt := &opt{}
 	parser := argparse.NewParser("kf", "Forward with style - a kubernetes port forwarding tool")
 	opt.config = parser.String("c", "config", &argparse.Options{Required: false, Help: fmt.Sprintf("path to config file; defaults to %s", config.DefaultPath())})
 	opt.profile = parser.String("p", "profile", &argparse.Options{Required: false, Help: "<profile_name> forward all services on the selected profile"})
-	opt.service = parser.List("s", "service", &argparse.Options{Required: false, Help: "<alias>[:lport][:rport] ... forward one or more services from the config service list. lport/rport -> overrides the default port ", Validate: validateServiceArgs})
-	opt.forward = parser.List("f", "forward", &argparse.Options{Required: false, Help: "<service_name><:lport><:rport> ... forward one or more services", Validate: validateServiceArgs})
+	opt.service = parser.String("s", "service",
+		&argparse.Options{Required: false, Help: "<nameOrAlias>[:lport][:rport] forward one service from the config service list. lport/rport -> overrides the default port ", Validate: validateServiceArgs})
 	opt.list = parser.Flag("l", "list", &argparse.Options{Required: false, Help: "list all profiles and services"})
 	opt.namespace = parser.String("n", "namespace", &argparse.Options{Required: false, Help: "kube namespace; defaults to dev; can be passed along with other args"})
 	opt.verbose = parser.Flag("v", "verbose", &argparse.Options{Required: false, Help: "enable verbose logging"})
