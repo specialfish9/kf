@@ -77,7 +77,7 @@ func (s *Layer) Forward(ctx context.Context, req PortForwardRequest) error {
 	}
 
 	path := fmt.Sprintf("/api/v1/namespaces/%s/pods/%s/portforward/", pod.Namespace, pod.Name)
-	hostIP := strings.TrimLeft(s.config.Host, "htps:/")
+	hostIP := strings.TrimPrefix(strings.TrimPrefix(s.config.Host, "https://"), "http://")
 
 	u, err := constructURL("https", hostIP, path)
 	if err != nil {

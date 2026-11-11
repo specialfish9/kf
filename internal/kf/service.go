@@ -9,7 +9,10 @@ import (
 	"log/slog"
 	"math"
 	"math/rand"
+	"time"
 )
+
+const retryBackoff = time.Second
 
 func (k *KF) ForwardService(ctx context.Context, nameOrAlias string, namespace string, stopCh chan struct{}) error {
 	cfgSvc := k.cfg.GetService(nameOrAlias)
@@ -42,25 +45,43 @@ func (k *KF) forwardService(ctx context.Context, cfgSvc *configv3.Service, names
 		return err
 	}
 
-	readyCh := make(chan struct{})
-
-	err = k.layer.Forward(
-		ctx,
-		k8s.PortForwardRequest{
-			Service:    k8sSvc,
-			LocalPort:  localPort,
-			RemotePort: cfgSvc.RPort,
-			ReadyCh:    readyCh,
-			StopCh:     stopCh,
-		})
-	if err != nil {
+	if err := ctx.Err(); err != nil {
 		return err
 	}
 
-	<-stopCh
+	for {
+		select {
+		case <-stopCh:
+			slog.Info("Received a stop command. Terminating...", "name", cfgSvc.Alias, "lport", localPort)
+			return nil
+		case <-ctx.Done():
+			slog.Info("Context is done. Terminating...", "name", cfgSvc.Alias, "lport", localPort)
+			return nil
+		default:
+			// Fresh channel per attempt: client-go closes ReadyCh on success,
+			// reusing it across retries panics with "close of closed channel".
+			readyCh := make(chan struct{})
+			err = k.layer.Forward(
+				ctx,
+				k8s.PortForwardRequest{
+					Service:    k8sSvc,
+					LocalPort:  localPort,
+					RemotePort: cfgSvc.RPort,
+					ReadyCh:    readyCh,
+					StopCh:     stopCh,
+				})
+			if err != nil {
+				slog.Error("Error forwarding service", "error", err, "name", cfgSvc.Alias, "lport", localPort)
+			}
 
-	slog.Info("Service stopped", "name", cfgSvc.Alias, "lport", localPort)
-	return nil
+			// Backoff before retrying to avoid a hot loop.
+			select {
+			case <-stopCh:
+			case <-ctx.Done():
+			case <-time.After(retryBackoff):
+			}
+		}
+	}
 }
 
 func randomPort() int {
